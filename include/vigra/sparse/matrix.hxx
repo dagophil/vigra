@@ -368,6 +368,9 @@ class CRSMatrix
 {
 public:
 
+    typedef T value_type;
+    typedef detail::MatrixProxy<CRSMatrix<T> > Proxy;
+
     CRSMatrix(
             Shape2 const & shape = Shape2(0, 0),
             value_type* vals = nullptr
@@ -434,7 +437,7 @@ private:
     std::vector<value_type> values_; // the non-zero eleemnts
     std::vector<size_t> row_ptr_; // holds begin and end of the i-th row in values_
     std::vector<size_t> col_index_; // the column indices of the elements
-}
+};
 
 
 
