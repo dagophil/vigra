@@ -56,44 +56,6 @@ namespace sparse
 
 namespace detail
 {
-    // /// \brief The ConstMatrixProxy is used to get elements from a const sparse matrix.
-    // template <typename MATRIX>
-    // class ConstMatrixProxy
-    // {
-    // public:
-
-    //     typedef MATRIX Matrix;
-    //     typedef typename Matrix::value_type value_type;
-
-    //     ConstMatrixProxy(
-    //             Matrix const & matrix, 
-    //             size_t i, 
-    //             size_t j
-    //     )   :
-    //         mat_(matrix),
-    //         i_(i),
-    //         j_(j)
-    //     {}
-
-    //     /// \brief If the proxy is converte
-    //     operator value_type() const
-    //     {
-    //         return mat_.get(i_, j_);
-    //     }
-
-    //     /// \brief Explicitly delete the assignemnt for the const proxy.
-    //     ConstMatrixProxy & operator=(value_type const & v) = delete;
-
-    //     /// \brief Explicitly delete the assignemnt for the const proxy.
-    //     ConstMatrixProxy & operator=(ConstMatrixProxy const & other) = delete;
-
-    // private:
-
-    //     Matrix const & mat_; // the referred matrix
-    //     size_t const i_; // the first matrix index
-    //     size_t const j_; // the second matrix index
-    // };
-
     /// \brief The MatrixProxy is used to get and set elements of a sparse matrix.
     template <typename MATRIX>
     class MatrixProxy
@@ -138,8 +100,7 @@ namespace detail
         size_t const i_; // first matrix index
         size_t const j_; // second matrix index
     };
-
-}
+} // namespace detail
 
 /// \brief Dictionary Of Keys matrix.
 /// The DOKMatrix consists of a map that maps (row, column)-pairs to the
@@ -280,6 +241,18 @@ public:
         }
     }
 
+    /// \brief Return the matrix shape.
+    Shape2 const & shape() const
+    {
+        return shape_;
+    }
+
+    /// \brief Return the number of non-zero elements.
+    size_t nnz() const
+    {
+        return data_.size();
+    }
+
     /// \brief Append a new triple (i, j, v) to the vector with the stored elements.
     /// If appending would destroy the order of the elements (sorted by row index, then column index),
     /// an exception of the type std::runtime_error is thrown.
@@ -300,6 +273,62 @@ public:
             data_.emplace_back(i, j, v);
     }
 
+    /// \brief Return the value of the element at (i, j).
+    value_type get(
+        size_t i,
+        size_t j
+    ) const {
+        auto it = std::lower_bound(data_.begin(), data_.end(), Triple(i, j, 0), compare_triple);
+        if (it != data_.end() && std::get<0>(*it) == i && std::get<1>(*it) == j)
+            return std::get<2>(*it);
+        else
+            return value_type(0);
+    }
+
+    /// \brief Set the element at (i, j).
+    void set(
+        size_t i,
+        size_t j,
+        value_type const & v
+    ){
+        auto it = std::lower_bound(data_.begin(), data_.end(), Triple(i, j, 0), compare_triple);
+        if (it != data_.end() && std::get<0>(*it) == i && std::get<1>(*it) == j)
+        {
+            // There already is a value at (i, j).
+            // Either remove it (if v == 0) or replace it (if v != 0).
+            if (v == 0)
+                data_.erase(it);
+            else
+                std::get<2>(*it) = v;
+        }
+        else
+        {
+            // There is no value at (i, j).
+            // Insert a new one (if necessary).
+            if (v != 0)
+                data_.emplace(it, i, j, v);
+        }
+    }
+
+    /// \brief Return a proxy element that can be used to set the element at (i, j).
+    Proxy operator()(
+        size_t i,
+        size_t j
+    ){
+        return Proxy(*this, i, j);
+    }
+
+    /// \brief Return the value of the element at (i, j).
+    /// \note
+    /// There is no need for a proxy since this is the const version of operator()
+    /// and therefore assigment is not necessary.
+    value_type operator()(
+        size_t i,
+        size_t j
+    ) const {
+        return get(i, j);
+    }
+
     /// \brief Return the internal vector storage.
     std::vector<Triple> const & data() const
     {
@@ -308,10 +337,21 @@ public:
 
 private:
 
+    /// \brief A comparator for triple objects that only compares the
+    /// matrix indices i and j and ignores the stored value v.
+    static bool compare_triple(Triple const & a, Triple const & b)
+    {
+        if (std::get<0>(a) != std::get<0>(b))
+            return std::get<0>(a) < std::get<0>(b);
+        else
+            return std::get<1>(a) < std::get<1>(b);
+    }
+
     Shape2 shape_; // the matrix shape
     std::vector<Triple> data_; // the stored entries, sorted by row index, then column index
 
 };
+
 
 
 } // namespace sparse
