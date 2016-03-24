@@ -228,14 +228,17 @@ public:
     )   :
         shape_(shape)
     {
-        for (size_t i = 0; i < shape_[0]; ++i)
+        if (vals != nullptr)
         {
-            for (size_t j = 0; j < shape_[1]; ++j)
+            for (size_t i = 0; i < shape_[0]; ++i)
             {
-                auto v = vals[i*shape_[1]+j];
-                if (v != 0)
+                for (size_t j = 0; j < shape_[1]; ++j)
                 {
-                    data_.emplace_back(i, j, v);
+                    auto v = vals[i*shape_[1]+j];
+                    if (v != 0)
+                    {
+                        data_.emplace_back(i, j, v);
+                    }
                 }
             }
         }
@@ -351,6 +354,87 @@ private:
     std::vector<Triple> data_; // the stored entries, sorted by row index, then column index
 
 };
+
+/// \brief Compressed Row Storage matrix.
+/// The CRSMatrix stores the matrix in three vectors.
+/// The first vector v0 contains all non-zero values, first sorted by row index, then by column index.
+/// The second vector v1 is defined by a recursive definition:
+/// v1[0] = 0;
+/// v1[i] = v1[i-1] + (number of non-zero eleemnts on the (i-1)-th row in the matrix)
+/// Thus the values of the i-th row are in the range [v1[i], v1[i+1]) of v0.
+/// The third vector v2 contains the column index of all elements in v0.
+template <typename T>
+class CRSMatrix
+{
+public:
+
+    CRSMatrix(
+            Shape2 const & shape = Shape2(0, 0),
+            value_type* vals = nullptr
+    )   :
+        shape_(shape)
+    {
+        if (vals != nullptr)
+        {
+            // TODO: Fill the matrix.
+        }
+    }
+
+    /// \brief Return the matrix shape.
+    Shape2 const & shape() const
+    {
+        return shape_;
+    }
+
+    /// \brief Return the number of non-zero elements.
+    size_t nnz() const
+    {
+        return values_.size();
+    }
+
+    /// \brief Return the value of the element at (i, j).
+    value_type get(
+        size_t i,
+        size_t j
+    ) const {
+        // TODO: Implement this.
+    }
+
+    /// \brief Set the element at (i, j).
+    void set(
+        size_t i,
+        size_t j,
+        value_type const & v
+    ){
+        // TODO: Implement this.
+    }
+
+    /// \brief Return a proxy element that can be used to set the element at (i, j).
+    Proxy operator()(
+        size_t i,
+        size_t j
+    ){
+        // TODO: Implement this.
+    }
+
+    /// \brief Return the value of the element at (i, j).
+    /// \note
+    /// There is no need for a proxy since this is the const version of operator()
+    /// and therefore assigment is not necessary.
+    value_type operator()(
+        size_t i,
+        size_t j
+    ) const {
+        // TODO: Implement this.
+    }
+
+private:
+
+    Shape2 shape_; // the matrix shape
+    std::vector<value_type> values_; // the non-zero eleemnts
+    std::vector<size_t> row_ptr_; // holds begin and end of the i-th row in values_
+    std::vector<size_t> col_index_; // the column indices of the elements
+}
 
 
 
